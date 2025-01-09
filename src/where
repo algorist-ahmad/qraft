@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Minimal parsing logic
+echo "$@" | while read -r clause; do
+    # Extract components using regex
+    if [[ $clause =~ ^([a-zA-Z0-9_]+)[[:space:]]*([=!<>]+|~|lt|gt|le|ge|like|not like|is|not in|between|and|or|E|!E|in|having)[[:space:]]*(.*)$ ]]; then
+        column="${BASH_REMATCH[1]}"
+        operator="${BASH_REMATCH[2]}"
+        value="${BASH_REMATCH[3]}"
+
+        # Print the parsed components
+        echo "Column: $column"
+        echo "Operator: $operator"
+        echo "Value: $value"
+        echo "------"
+    fi
+done
