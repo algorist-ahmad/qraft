@@ -94,17 +94,41 @@ parse() {
                   operand_mode=true
                 fi
             ;;&
-#             qraft connect
-# qraft connect <FILE>
-# qraft connect <FILE>...
-# qraft connect <FILE>/<TABLE>
-# qraft load
-# qraft load <FILE>
-# qraft load <FILE>...
-# qraft load <FILE>/<TABLE>
-# qraft protect <FILE>
-# qraft protect <TABLE>
-# qraft create table <TABLE> (<COLUMN> <DATATYPE> [...])
+            -p | --protect )
+                if not ${ARG[protect]} ; then
+                  ARG[protect]=1
+                  parsed=true
+                  operand_mode=true
+                fi
+            ;;&
+            create )
+                if not ${ARG[create]} ; then
+                  ARG[create]=1
+                  parsed=true
+                  operand_mode=true
+                fi
+            ;;&
+             )
+                if not ${ARG[]} ; then
+                  ARG[]=1
+                  parsed=true
+                  operand_mode=true
+                fi
+            ;;&
+             )
+                if not ${ARG[]} ; then
+                  ARG[]=1
+                  parsed=true
+                  operand_mode=true
+                fi
+            ;;&
+             )
+                if not ${ARG[]} ; then
+                  ARG[]=1
+                  parsed=true
+                  operand_mode=true
+                fi
+            ;;&
 # qraft alter table <TABLE> add <COLUMN> <DATATYPE>
 # qraft alter table <TABLE> rename to <NEW_TABLE>
 # qraft drop table <TABLE>
@@ -196,23 +220,27 @@ dispatch() {
     is_empty ${ARG[input]} && run_default
     is_true ${ARG[help]} && print_help
     is_true ${ARG[connect]} && ./load_database.sh "${ARG[operands]}"
+    is_true ${ARG[protect]} && ./protect.sh
 }
 
 terminate() {
 
-    final_message=
-    error_number=
+    # final_message=
+    # error_number=
 
     # if debug is true, reveal variables
     is_true ${ARG[debug]} && reveal_variables
 
-    # if there are any errors, print
-    [[ $error_number -gt 0 ]] && echo -e "$error_msg"
+    # # if there are any errors, print
+    # [[ $error_number -gt 0 ]] && echo -e "$error_msg"
 
-    # if there are any final messages, print
-    [[ -n "$final_message" ]] && echo -e "\n$final_message"
+    # # if there are any final messages, print
+    # [[ -n "$final_message" ]] && echo -e "\n$final_message"
 
-    exit $error_number
+    # exit $error_number
+
+    # print results
+    cat $ROOT/tmp/output.json
 }
 
 print_help() {

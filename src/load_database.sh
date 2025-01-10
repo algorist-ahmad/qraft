@@ -1,9 +1,14 @@
 #!/bin/bash
 
+# Trim leading and trailing whitespace from the filename
+DATABASE_FILE=$(echo "$1" | xargs)
+
+# Change directory to qraft/tmp to update output.json
+cd ../tmp || { output_error "Error: Failed to change directory to '../tmp'"; exit 1; }
+
 # Function to output error messages
 output_error() {
     jq ".success = false | .message = \"$1\"" ./output.json > ./output.tmp && mv ./output.tmp ./output.json
-    cat ./output.json
 }
 
 # attempt to connect to provided sqlite3 file and run test query
@@ -14,12 +19,6 @@ if [[ -z "$1" ]]; then
     output_error "Error: No database file provided."
     exit 1
 fi
-
-# Trim leading and trailing whitespace from the filename
-DATABASE_FILE=$(echo "$1" | xargs)
-
-# Change directory to qraft/tmp to update output.json
-cd ../tmp || { output_error "Error: Failed to change directory to '../tmp'"; exit 1; }
 
 # Ensure the SQLite file exists in the correct directory
 if [[ ! -f "$DATABASE_FILE" ]]; then
@@ -43,4 +42,4 @@ fi
 jq --arg db "$DATABASE_FILE" '.database = $db | .success = true | .message = "Database loaded successfully"' ./output.json > ./output.tmp && mv ./output.tmp ./output.json
 
 # Show results
-cat ./output.json
+# cat ./output.json
