@@ -258,6 +258,7 @@ parse() {
 
 dispatch() {
 
+    json="$ROOT/tmp/output.json"
     db="${ARG[database]}"
     target="${ARG[target]}"
     modifier= # DISTINCT
@@ -282,10 +283,10 @@ dispatch() {
     is_true ${ARG[connect]} && ./load_database.sh "${ARG[database]}"
     is_true ${ARG[protect]} && ./protect.sh
 
-    is_true ${ARG[select]} && ./select.sh -from $target -in $db -where $filter -modifier $modifier -groupby $grouping -orderby $ordering -limit $lim -offset $shift
-    is_true ${ARG[insert]} && ./insert.sh -into $target -in $db -values $operands
-    is_true ${ARG[update]} && ./update.sh $target -set $operands -where $filter -in $db
-    is_true ${ARG[delete]} && ./delete.sh -from $target -where $filter
+    is_true ${ARG[select]} && ./select.sh -output $json -from $target -in $db -where $filter -modifier $modifier -groupby $grouping -orderby $ordering -limit $lim -offset $shift
+    is_true ${ARG[insert]} && ./insert.sh -output $json -into $target -in $db -values $operands
+    is_true ${ARG[update]} && ./update.sh -output $json -target $target -set $operands -where $filter -in $db
+    is_true ${ARG[delete]} && ./delete.sh -output $json -from $target -where $filter
 }
 
 terminate() {
