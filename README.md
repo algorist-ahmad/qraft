@@ -191,7 +191,7 @@ qraft group <COL>
 ### MANIPULATION
 
 #### INSERT
-
+-modifier $modifier 
 ```
 qraft [TABLE] add <COL1>=x <COL2>=y <COL3>=z
 ```
