@@ -4,7 +4,6 @@ source $ROOT/src/logger.sh
 
 # Trim leading and trailing whitespace from the filename
 DATABASE_FILE=$(echo "$1" | xargs)
-# OUTPUT_FILE=$(echo "$2" | xargs)
 
 # Verify input
 [[ -z "$@" ]] && err "Error: No database file provided." && exit 1

@@ -65,12 +65,12 @@ create_cache_file() {
 }
 
 reset_output_file() {
-    database=$($jq $CACHE_FILE database)
-    target=$($jq $CACHE_FILE target.table)
+    db_file=$($jq $CACHE_FILE database.file)
+    target_table=$($jq $CACHE_FILE target.table)
     
     cp $OUTPUT_TEMPLATE_FILE $OUTPUT_FILE
-    $jq $OUTPUT_FILE -u database = $database
-    $jq $OUTPUT_FILE -u target.table = $target
+    $jq $OUTPUT_FILE -u database = $db_file
+    $jq $OUTPUT_FILE -u target.table = $target_table
 }
 
 parse() {
