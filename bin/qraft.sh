@@ -275,7 +275,7 @@ parse() {
 
 dispatch() {
 
-    db=$($jq $CACHE_FILE database)
+    db=$($jq $CACHE_FILE database.file)
     target="${ARG[target]:-null}"
     modifier=null # DISTINCT
     operands="${ARG[operands]:-null}"
@@ -285,6 +285,8 @@ dispatch() {
     lim=${ARG[limit]:-99}
     shift=${ARG[shift]:-0}
     e= # error
+
+    echo "HERE! db is $db"
     
     # if an error is detected, output to stderr immediately
     if [[ $e -gt 0 ]]; then
