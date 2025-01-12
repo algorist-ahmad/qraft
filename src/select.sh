@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SELECT script to generate an SQL SELECT query.
-
+echo "SELECT TRIGGERED: $@"
 output_file=""
 db_file=""
 target=""
@@ -31,7 +31,7 @@ done
 
 # Validate mandatory fields
 if [[ -z "$output_file" || -z "$db_file" || -z "$target" ]]; then
-    echo '{"success": false, "message": "Missing mandatory arguments"}' > "$output_file"
+    jq ".success = false | .message = Missing mandatory arguments" "$output_file" > "$output_file"
     exit 1
 fi
 

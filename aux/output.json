@@ -1,14 +1,14 @@
 {
     "success": false,
+    "message": "",
     "database": "",
     "target": "",
     "columns": [],
-    "operation":"SELECT",
     "filters": [],
     "modifications": {},
     "ordering":[],
     "limit":99,
     "offset":0,
-    "message": "",
-    "final_query": "SELECT '***SUCCESS***';"
+    "input": "",
+    "query": "SELECT '***SUCCESS***';"
 }
