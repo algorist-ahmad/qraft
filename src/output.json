@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "message": "Database loaded successfully",
+  "database": "/home/ahmad/nexus/coin/coin.db",
+  "target": "",
+  "columns": "",
+  "operation": "",
+  "filters": [],
+  "modifications": {},
+  "grouping": "",
+  "ordering": [],
+  "limit": 0,
+  "offset": 0
+}

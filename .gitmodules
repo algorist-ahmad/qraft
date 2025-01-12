@@ -1,0 +1,3 @@
+[submodule "src/qj"]
+	path = src/qj
+	url = https://github.com/algorist-ahmad/qj

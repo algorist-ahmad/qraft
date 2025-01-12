@@ -1,14 +1,16 @@
 {
     "success": false,
-    "message": "",
-    "database": "",
-    "target": "",
-    "columns": [],
+    "message": null,
+    "database": null,
+    "target": {
+        "table": null,
+        "columns": []
+    },
     "filters": [],
     "modifications": {},
     "ordering":[],
     "limit":99,
     "offset":0,
-    "input": "",
+    "input": null,
     "query": "SELECT '***SUCCESS***';"
 }

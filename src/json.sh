@@ -6,7 +6,7 @@ set -e
 # json --> help
 # json -h --> help
 # json -H --> jq help
-# json <file> --> error
+# json <file> --> error or query
 # json -q --> error
 # json -u --> error
 # json / --> pass to jq
@@ -16,7 +16,6 @@ set -e
 # json <file> -u key  --> error
 # json <file> -u key =  --> error
 # json <file> -u key = values  --> update
-
 
 main() {
   case "$1" in
@@ -32,10 +31,12 @@ main() {
   shift
   
   case "$1" in
-    '') echo "Error: missing option (-q or -u)" ;;
+    # '') echo "Error: missing option (-q or -u)" ;;
+    '') query "$file" ;;
     -q) shift ; query "$file" "$@" ;;
     -u) shift ; update "$file" "$@" ;;
-     *) echo "$1: unknown option, use jq instead"
+    -*) shift ; echo "$1: unknown option, use jq instead" ;;
+     *) query "$file" "$@" ;;
   esac
 }
 
@@ -56,26 +57,61 @@ query() {
   jq -r $query $file
 }
 
-update(){
+# update(){
 
+#   # Ensure sufficient arguments are provided for -u
+#   if [ "$#" -lt 4 ]; then help ; exit 1 ; fi
+
+#   tmp_file=$(mktemp)
+#   json_file=$1
+#   key=$2
+#   shift 3;
+#   val="$*"
+
+#   # >&2 echo "update $json_file: set $key = '$val'"
+
+#   # Ensure the file exists
+#   [ ! -f "$json_file" ] && echo '{}' > "$json_file"
+
+#   eval "jq '.$key = \"$val\"' $json_file > $tmp_file && mv $tmp_file $json_file"
+# }
+
+update() {
   # Ensure sufficient arguments are provided for -u
   if [ "$#" -lt 4 ]; then help ; exit 1 ; fi
 
   tmp_file=$(mktemp)
   json_file=$1
   key=$2
-  shift 3;
+  shift 3
   val="$*"
 
-  echo "update $json_file: set $key = '$val'"
-
   # Ensure the file exists
-  if [ ! -f "$json_file" ]; then
-    echo "Error: File '$json_file' not found!"
-    exit 1
+  [ ! -f "$json_file" ] && echo '{}' > "$json_file"
+
+  # Determine the type of the value
+  if [[ "$val" =~ ^[0-9]+$ ]]; then
+    # Number
+    jq ".$key = $val" "$json_file" > "$tmp_file"
+  elif [[ "$val" =~ ^\[(.*)\]$ ]]; then
+    # Array (must be in JSON format)
+    jq --argjson val "$val" ".$key = \$val" "$json_file" > "$tmp_file"
+  elif [[ "$val" =~ ^\{(.*)\}$ ]]; then
+    # JSON Object (must be in JSON format)
+    jq --argjson val "$val" ".$key = \$val" "$json_file" > "$tmp_file"
+  elif [[ "$val" == "true" || "$val" == "false" ]]; then
+    # Boolean
+    jq ".$key = $val" "$json_file" > "$tmp_file"
+  elif [[ "$val" == "null" ]]; then
+    # Null
+    jq ".$key = null" "$json_file" > "$tmp_file"
+  else
+    # String (default)
+    jq ".$key = \"$val\"" "$json_file" > "$tmp_file"
   fi
 
-  eval "jq '.$key = \"$val\"' $json_file > $tmp_file && mv $tmp_file $json_file"
+  # Replace the original file with the updated one
+  mv "$tmp_file" "$json_file"
 }
 
 delete() {

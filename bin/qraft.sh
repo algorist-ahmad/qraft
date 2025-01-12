@@ -1,9 +1,11 @@
 #!/bin/bash
-ROOT=$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")") # path to this project root dir
-ENV=$ROOT/.env
 
-# Load environment variables from .env
-[ -f $ENV ] && source $ENV || echo '.env NOT FOUND!'
+export ROOT=$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")") # path to this project root dir
+
+# imports
+source $ROOT/.env
+source $ROOT/src/logger.sh
+export jq="$ROOT/src/qj/qj"
 
 # general syntax: qraft <filter> <operator> <operands>
 
@@ -22,10 +24,10 @@ declare -A ARG=(
     [desc]=0
     [filter]=            # assumed to be filter until operation found. Filters are naturally joined by AND, unless otherwise specified: table:col1,col2,col3 col1>80//col1<100 col2=A//B//C//D//E col3~shit%//%ass
     [operands]=          # or mods
-    [limit]=0            # LIMIT <INT>
+    [limit]=99           # LIMIT <INT>
     [shift]=0            # OFFSET <INT>
     [ordering]=          # ORDER BY <COL> ASC(+)/DESC(-)
-    [grouping]=0         # GROUP BY
+    [grouping]=          # GROUP BY
     [select]=1
     [insert]=0
     [update]=0
@@ -52,9 +54,23 @@ initialize() {
   # attempt connection to $DATABASE
   # other verifications making sure its working
   # DO NOT put existence tests and validity tests outside this function
-#   cat "$JSON_OUTPUT_FILE" 
-  cd $ROOT
-  cp aux/output.json tmp/output.json
+  # cat "$JSON_OUTPUT_FILE" 
+  create_cache_file  # non-output meta data stored here
+  reset_output_file  # final output
+}
+
+create_cache_file() {
+    [[ ! -d "$CACHE" ]] && mkdir -p "$CACHE" && dbug no cache directory, created new one
+    [[ ! -f $CACHE_FILE ]] && echo '{}' > "$CACHE_FILE"
+}
+
+reset_output_file() {
+    database=$($jq $CACHE_FILE database)
+    target=$($jq $CACHE_FILE target.table)
+    
+    cp $OUTPUT_TEMPLATE_FILE $OUTPUT_FILE
+    $jq $OUTPUT_FILE -u database = $database
+    $jq $OUTPUT_FILE -u target.table = $target
 }
 
 parse() {
@@ -101,6 +117,7 @@ parse() {
                 if not ${ARG[connect]} ; then
                   last_opt=database
                   ARG[connect]=1 # dispatch to load_database
+                  ARG[select]=0
                   parsed=true
                 fi
             ;;&
@@ -258,16 +275,15 @@ parse() {
 
 dispatch() {
 
-    json="$ROOT/tmp/output.json"
-    db="${ARG[database]}"
-    target="${ARG[target]}"
-    modifier= # DISTINCT
-    operands="${ARG[operands]}"
-    filter="${ARG[filter]}"
-    grouping="${ARG[grouping]}"
-    ordering="${ARG[ordering]}"
-    lim=${ARG[limit]}
-    shift=${ARG[shift]}
+    db=$($jq $CACHE_FILE database)
+    target="${ARG[target]:-null}"
+    modifier=null # DISTINCT
+    operands="${ARG[operands]:-null}"
+    filter="${ARG[filter]:-null}"
+    grouping="${ARG[grouping]:-null}"
+    ordering="${ARG[ordering]:-null}"
+    lim=${ARG[limit]:-99}
+    shift=${ARG[shift]:-0}
     e= # error
     
     # if an error is detected, output to stderr immediately
@@ -306,7 +322,7 @@ terminate() {
     # exit $error_number
 
     # print results
-    cat $ROOT/tmp/output.json
+    $jq $OUTPUT_FILE
 }
 
 print_help() {
@@ -314,7 +330,8 @@ print_help() {
 }
 
 run_default() {
-    echo "no args, idk what to do"
+    # echo "no args, idk what to do"
+    :
 }
 
 # Loop through the keys of the associative array and print key-value pairs
