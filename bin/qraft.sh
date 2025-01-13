@@ -76,7 +76,7 @@ reset_output_file() {
 parse() {
 
     # how it works:
-    # all arguments are assumed to be filters save for a few speciasl commands
+    # all arguments are assumed to be filters save for a few special commands
     # until an operation is uttered. Once this occurs, all subsequent arguments
     # are considered operands. The parser will do its best to parse operands,
     # but a secondary parser may be needed for cases with complex arguments.

@@ -336,3 +336,60 @@ qraft import <FILE> into <TABLE>
 --help
 --version
 ```
+
+## Command Scenarios and Expected Outputs
+
+Based on this sample table:
+
+Here’s the **employees** table formatted as a markdown table:
+
+|||
+|-----|-------------|
+| file  | path/to/employees.db |
+| table | employees |
+| id  | name         | age | department | salary | hire_date   | status   |
+|-----|--------------|-----|------------|--------|-------------|----------|
+| 1   | John Smith   | 34  | Sales      | 55000  | 2015-04-23  | Active   |
+| 2   | Jane Doe     | 28  | Marketing  | 60000  | 2018-07-12  | Active   |
+| 3   | Bob Johnson  | 45  | IT         | 72000  | 2010-10-01  | Active   |
+| 4   | Alice Brown  | 31  | Sales      | 58000  | 2017-03-15  | Active   |
+| 5   | Tom White    | 29  | Marketing  | 52000  | 2020-06-10  | Active   |
+| 6   | Sarah Green  | 40  | HR         | 65000  | 2013-09-05  | Active   |
+| 7   | Mike Black   | 38  | IT         | 75000  | 2012-11-20  | Inactive |
+| 8   | Emma Blue    | 27  | Sales      | 54000  | 2021-01-11  | Active   |
+| 9   | Chris Red    | 33  | HR         | 62000  | 2019-08-22  | Active   |
+| 10  | Amy Yellow   | 35  | IT         | 70000  | 2014-05-30  | Inactive |
+
+For this section, `q` will be aliased to `qraft`
+
+| **args** | **resulting query** | **explanation** |
+|---|---|---|
+| `q` | - | Checks cache.json if a connection exists. If not, prompts the user to pick a database from a list of cached databases also stored in cache.json. If list is empty, tell user to do `q connect <FILE>` instead.<br> If a connection is found, that is, "database" in cache is set to a valid sqlite3 file, then next step is to check if a target is set in cache. If not, get a list of all tables from the database and prompt user to pick a target. If target is found, do `q <TARGET>` and let the program handle the rest. See `q target` examples below. |
+| `q connect employees.db` | `ATTACH DATABASE 'employees.db';` | - |
+| `q connect employees.db employees` | `ATTACH DATABASE 'employees.db'; SELECT * FROM employees;` | Returns all rows from the `employees` table. |
+| `q load employees.db` | `ATTACH DATABASE 'employees.db';` | - |
+| `q employees` | `SELECT * FROM employees;` | Displays all rows from the `employees` table. |
+| `q desc employees` | `PRAGMA table_info(employees);` | Describes the structure of the `employees` table. |
+| `q employees col=Sales` | `SELECT * FROM employees WHERE department='Sales';` | Rows where `department` is `Sales`. |
+| `q employees col!=IT` | `SELECT * FROM employees WHERE department!='IT';` | Rows where `department` is not `IT`. |
+| `q employees col>30` | `SELECT * FROM employees WHERE age>30;` | Rows where `age` is greater than 30. |
+| `q employees col<40` | `SELECT * FROM employees WHERE age<40;` | Rows where `age` is less than 40. |
+| `q employees col ge 35` | `SELECT * FROM employees WHERE age>=35;` | Rows where `age` is greater than or equal to 35. |
+| `q employees col le 30` | `SELECT * FROM employees WHERE age<=30;` | Rows where `age` is less than or equal to 30. |
+| `q employees col~Jane` | `SELECT * FROM employees WHERE name LIKE 'Jane';` | Rows where `name` matches `Jane`. |
+| `q employees col is null` | `SELECT * FROM employees WHERE col IS NULL;` | Rows where `col` is `NULL`. |
+| `q employees col is not null` | `SELECT * FROM employees WHERE col IS NOT NULL;` | Rows where `col` is not `NULL`. |
+| `q employees department='Marketing'` | `SELECT * FROM employees WHERE department='Marketing';` | Rows where `department` is `Marketing`. |
+| `q employees salary>60000 and status='Active'` | `SELECT * FROM employees WHERE salary>60000 AND status='Active';` | Rows where `salary` is greater than 60000 and `status` is `Active`. |
+| `q employees salary>60000 or department='IT'` | `SELECT * FROM employees WHERE salary>60000 OR department='IT';` | Rows where `salary` is greater than 60000 or `department` is `IT`. |
+| `q employees hire_date>'2015-01-01'` | `SELECT * FROM employees WHERE hire_date>'2015-01-01';` | Rows where `hire_date` is after January 1, 2015. |
+| `q employees lim=3` | `SELECT * FROM employees LIMIT 3;` | Returns the first 3 rows of the `employees` table. |
+| `q employees shift=2` | `SELECT * FROM employees OFFSET 2;` | Skips the first 2 rows and returns the rest. |
+| `q employees +salary` | `SELECT * FROM employees ORDER BY salary ASC;` | Rows sorted by `salary` in ascending order. |
+| `q employees -age` | `SELECT * FROM employees ORDER BY age DESC;` | Rows sorted by `age` in descending order. |
+| `q employees transaction begin` | `BEGIN TRANSACTION;` | Begins a transaction. |
+| `q employees transaction commit` | `COMMIT;` | Commits the current transaction. |
+| `q employees pragma foreign_keys=ON` | `PRAGMA foreign_keys=ON;` | Enables foreign key constraints. |
+| `q employees export employees to emp.csv` | `SELECT * FROM employees INTO OUTFILE 'emp.csv';` | Exports the `employees` table to a CSV file named `emp.csv`. |
+| `q employees import emp.csv into employees` | `.mode csv; .import 'emp.csv' employees;` | Imports data from a CSV file into the `employees` table. |
+| `q employees col regexp '^J.*'` | `SELECT * FROM employees WHERE name REGEXP '^J.*';` | Rows where `name` starts with `J`. |
