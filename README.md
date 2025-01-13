@@ -343,7 +343,7 @@ Based on this sample table:
 
 Here’s the **employees** table formatted as a markdown table:
 
-
+|||
 |-----|-------------|
 | file  | path/to/employees.db |
 | table | employees |
