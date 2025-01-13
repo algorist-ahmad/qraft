@@ -343,10 +343,12 @@ Based on this sample table:
 
 Here’s the **employees** table formatted as a markdown table:
 
-|||
+
 |-----|-------------|
 | file  | path/to/employees.db |
 | table | employees |
+
+
 | id  | name         | age | department | salary | hire_date   | status   |
 |-----|--------------|-----|------------|--------|-------------|----------|
 | 1   | John Smith   | 34  | Sales      | 55000  | 2015-04-23  | Active   |
@@ -364,13 +366,22 @@ For this section, `q` will be aliased to `qraft`
 
 | **args** | **resulting query** | **explanation** |
 |---|---|---|
-| `q` | - | Checks cache.json if a connection exists. If not, prompts the user to pick a database from a list of cached databases also stored in cache.json. If list is empty, tell user to do `q connect <FILE>` instead.<br> If a connection is found, that is, "database" in cache is set to a valid sqlite3 file, then next step is to check if a target is set in cache. If not, get a list of all tables from the database and prompt user to pick a target. If target is found, do `q <TARGET>` and let the program handle the rest. See `q target` examples below. |
-| `q connect employees.db` | `ATTACH DATABASE 'employees.db';` | - |
-| `q connect employees.db employees` | `ATTACH DATABASE 'employees.db'; SELECT * FROM employees;` | Returns all rows from the `employees` table. |
-| `q load employees.db` | `ATTACH DATABASE 'employees.db';` | - |
+| `q` | - | Checks cache if a connection exists. If not, prompts the user to pick a database from a list of cached databases also stored in cache. If list is empty, tell user to do `q connect <FILE>` instead.<br> If a connection is found, that is, "database" in cache is set to a valid sqlite3 file, then next step is to check if a target is set in cache. If not, get a list of all tables from the database and prompt user to pick a target. If target is found, do `q <TARGET>` and let the program handle the rest. See `q target` examples below. |
+| `q connect ` | - | If connected, print info about current database file. If not, check if database file paths are stored in cache, and print them. Else give usage info. Include meta data in json output. |
+| `q connect invalid/file` | return error | Handle error gracefully. |
+| `q connect path/to/employees.db` | `.tables` | Queries the file for tables and views and store them in cache. Include meta data in json output. |
+| `q connect employees.db employees` | `SELECT * FROM employees;` | Returns all rows from the `employees` table. |
+| `q load path/to/employees.db` | `.tables` | Alias for `q connect`. |
 | `q employees` | `SELECT * FROM employees;` | Displays all rows from the `employees` table. |
+| `q employees:name,dep,stat` | `SELECT name,department,status FROM employees;` | Notice how I didn't need to type the entire column names. The program should be able to figure  it out. |
+| `q employees:+dep,name,-salar` | `SELECT department,name,salary FROM employees ORDER BY department ASC, salary DESC;` | You can simultaneously sort and select columns by prefixing with '+' (ASC) or '-' (DESC). Only these columns are displayed.  |
+| `q employees!age,hire` | `SELECT id,name,department,salary,status FROM employees;` | This syntax allows to choose which columns to EXCLUDE from SELECT, in this case, hide age and hire_date. |
+| `q +dep,name,-salar | `SELECT department,name,salary FROM employees ORDER BY department ASC, salary DESC;` | If `q target employees` is run first, stores target=employees in cache, and all subsequent queries are run against this table by default. |
+|  |  |  |
+|  |  |  |
 | `q desc employees` | `PRAGMA table_info(employees);` | Describes the structure of the `employees` table. |
 | `q employees col=Sales` | `SELECT * FROM employees WHERE department='Sales';` | Rows where `department` is `Sales`. |
+|  |  |  |
 | `q employees col!=IT` | `SELECT * FROM employees WHERE department!='IT';` | Rows where `department` is not `IT`. |
 | `q employees col>30` | `SELECT * FROM employees WHERE age>30;` | Rows where `age` is greater than 30. |
 | `q employees col<40` | `SELECT * FROM employees WHERE age<40;` | Rows where `age` is less than 40. |
