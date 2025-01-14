@@ -1,5 +1,11 @@
 # qraft
 
+## OUTPUT
+
+All output to stdout is JSON, save for options --help, --debug, --version, --interactive, --query-only, and export --format csv,tsv,pipe
+
+All error messages and warning MUST be sent to stderr
+
 ## SYNTAX (needs revision)
 
 These syntaxes apply to SQLite only.
@@ -364,43 +370,69 @@ Here’s the **employees** table formatted as a markdown table:
 
 For this section, `q` will be aliased to `qraft`
 
+New Features Explanation
+
+    Primary Key Special Handling:
+        If the primary key is of type INTEGER, rows can be identified and manipulated using only integer arguments (e.g., q 1 2 3 delete).
+
+    Add Operations:
+        q add supports adding rows with default or specific column values.
+
+    Modify Operations:
+        q mod enables updating column values based on conditions.
+
+    Delete Operations:
+        q delete supports deleting rows using conditions or primary key values.
+
+    Cache Listing (--list):
+        If no database or target is selected, lists cached databases or tables.
+
+    Protect Feature:
+        Allows marking databases or tables as read-only to safeguard against accidental modifications.
+
+    Extended Conditions:
+        Supports OR (|) and AND (whitespace) combinations for more complex queries.
+
 | **args** | **resulting query** | **explanation** |
 |---|---|---|
-| `q` | - | Checks cache if a connection exists. If not, prompts the user to pick a database from a list of cached databases also stored in cache. If list is empty, tell user to do `q connect <FILE>` instead.<br> If a connection is found, that is, "database" in cache is set to a valid sqlite3 file, then next step is to check if a target is set in cache. If not, get a list of all tables from the database and prompt user to pick a target. If target is found, do `q <TARGET>` and let the program handle the rest. See `q target` examples below. |
-| `q connect ` | - | If connected, print info about current database file. If not, check if database file paths are stored in cache, and print them. Else give usage info. Include meta data in json output. |
-| `q connect invalid/file` | return error | Handle error gracefully. |
-| `q connect path/to/employees.db` | `.tables` | Queries the file for tables and views and store them in cache. Include meta data in json output. |
-| `q connect employees.db employees` | `SELECT * FROM employees;` | Returns all rows from the `employees` table. |
+| `q` | - | Checks cache for a connection. Prompts for a database if none exists. If connected, checks for a target and runs based on `q target`. |
+| `q connect` | - | Displays current database info, lists cached databases, or provides usage info. Metadata included in JSON output. |
+| `q connect path/to/employees.db` | `.tables` | Queries the database for tables and caches them. Metadata included in JSON output. |
 | `q load path/to/employees.db` | `.tables` | Alias for `q connect`. |
+| `q connect employees.db employees` | `SELECT * FROM employees;` | Returns all rows from the `employees` table. |
 | `q employees` | `SELECT * FROM employees;` | Displays all rows from the `employees` table. |
-| `q employees:name,dep,stat` | `SELECT name,department,status FROM employees;` | Notice how I didn't need to type the entire column names. The program should be able to figure  it out. |
-| `q employees:+dep,name,-salar` | `SELECT department,name,salary FROM employees ORDER BY department ASC, salary DESC;` | You can simultaneously sort and select columns by prefixing with '+' (ASC) or '-' (DESC). Only these columns are displayed.  |
-| `q employees!age,hire` | `SELECT id,name,department,salary,status FROM employees;` | This syntax allows to choose which columns to EXCLUDE from SELECT, in this case, hide age and hire_date. |
-| `q +dep,name,-salar | `SELECT department,name,salary FROM employees ORDER BY department ASC, salary DESC;` | If `q target employees` is run first, stores target=employees in cache, and all subsequent queries are run against this table by default. |
-|  |  |  |
-|  |  |  |
+| `q employees:name,dep,stat` | `SELECT name,department,status FROM employees;` | Selects specific columns by partial name matching. |
+| `q employees:+dep,name,-salar` | `SELECT department,name,salary FROM employees ORDER BY department ASC, salary DESC;` | Sorts and selects columns, using `+` for ASC and `-` for DESC. |
+| `q employees!age,hire` | `SELECT id,name,department,salary,status FROM employees;` | Excludes specified columns (`age` and `hire_date`). |
+| `q dep=Sales` | `SELECT * FROM employees WHERE department='Sales';` | Filters rows where `department` is `Sales`. |
+| `q dep!=IT` | `SELECT * FROM employees WHERE department!='IT';` | Filters rows where `department` is not `IT`. |
+| `q age>30` | `SELECT * FROM employees WHERE age>30;` | Filters rows where `age` is greater than 30. |
+| `q name~Jane` | `SELECT * FROM employees WHERE name LIKE '%Jane%';` | Filters rows where `name` contains `Jane`. |
+| `q salary>60000 stat=Active` | `SELECT * FROM employees WHERE salary>60000 AND status='Active';` | Combines multiple conditions using AND. |
+| `q lim 3` | `SELECT * FROM employees LIMIT 3;` | Returns the first 3 rows. |
+| `q lim 3+9` | `SELECT * FROM employees LIMIT 3 OFFSET 9;` | Skips the first 9 rows and returns 3 rows. |
+| `q dep=IT\|dep=Sales stat=active\|stat=unknown age<20\|age>60` | `SELECT * FROM employees WHERE (department='IT' OR department='Sales') AND (status='active' OR status='unknown') AND (age<20 OR age>60);` | Combines AND and OR conditions. |
+| `q salary>60000\|salary<30000 stat=active` | `SELECT * FROM employees WHERE (salary>60000 OR salary<30000) AND status='active';` | Combines multiple AND and OR conditions. |
+| `q +hire` | `SELECT * FROM employees ORDER BY hire_date ASC;` | Orders by `hire_date` in ascending order. |
+| `q -hire` | `SELECT * FROM employees ORDER BY hire_date DESC;` | Orders by `hire_date` in descending order. |
+| `q +hire -salary` | `SELECT * FROM employees ORDER BY hire_date ASC, salary DESC;` | Orders by `hire_date` ASC and `salary` DESC. |
+| `q employees:-hire,+salary` | `SELECT name,department,status FROM employees ORDER BY hire_date DESC, salary ASC;` | Selects and sorts columns (opposite direction). |
+| `q 1 2 3 10` | `SELECT * FROM employees WHERE id=1 OR id=2 OR id=3 OR id=10;` | Filters rows by primary key (`id`). |
+| `q add` | `INSERT INTO employees DEFAULT VALUES;` | Adds a new row with default values. |
+| `q add name=joe age=30` | `INSERT INTO employees (name, age) VALUES ('joe', 30);` | Adds a row with specified column values. |
+| `q salary>60000 set salary=62000` | `UPDATE employees SET salary=62000 WHERE salary>60000;` | Modifies rows based on a condition. |
+| `q name=joe set stat=fired` | `UPDATE employees SET status='fired' WHERE name='joe';` | Updates rows where `name` is `joe`. |
+| `q 1 2 3 delete` | `DELETE FROM employees WHERE id=1 OR id=2 OR id=3;` | Deletes rows by primary key values. |
+| `q transac.begin` | `BEGIN TRANSACTION;` | Begins a transaction. |
+| `q transac.commit` | `COMMIT;` | Commits the current transaction. |
+| `q pragma foreign_keys=ON` | `PRAGMA foreign_keys=ON;` | Enables foreign key constraints. |
 | `q desc employees` | `PRAGMA table_info(employees);` | Describes the structure of the `employees` table. |
-| `q employees col=Sales` | `SELECT * FROM employees WHERE department='Sales';` | Rows where `department` is `Sales`. |
-|  |  |  |
-| `q employees col!=IT` | `SELECT * FROM employees WHERE department!='IT';` | Rows where `department` is not `IT`. |
-| `q employees col>30` | `SELECT * FROM employees WHERE age>30;` | Rows where `age` is greater than 30. |
-| `q employees col<40` | `SELECT * FROM employees WHERE age<40;` | Rows where `age` is less than 40. |
-| `q employees col ge 35` | `SELECT * FROM employees WHERE age>=35;` | Rows where `age` is greater than or equal to 35. |
-| `q employees col le 30` | `SELECT * FROM employees WHERE age<=30;` | Rows where `age` is less than or equal to 30. |
-| `q employees col~Jane` | `SELECT * FROM employees WHERE name LIKE 'Jane';` | Rows where `name` matches `Jane`. |
-| `q employees col is null` | `SELECT * FROM employees WHERE col IS NULL;` | Rows where `col` is `NULL`. |
-| `q employees col is not null` | `SELECT * FROM employees WHERE col IS NOT NULL;` | Rows where `col` is not `NULL`. |
-| `q employees department='Marketing'` | `SELECT * FROM employees WHERE department='Marketing';` | Rows where `department` is `Marketing`. |
-| `q employees salary>60000 and status='Active'` | `SELECT * FROM employees WHERE salary>60000 AND status='Active';` | Rows where `salary` is greater than 60000 and `status` is `Active`. |
-| `q employees salary>60000 or department='IT'` | `SELECT * FROM employees WHERE salary>60000 OR department='IT';` | Rows where `salary` is greater than 60000 or `department` is `IT`. |
-| `q employees hire_date>'2015-01-01'` | `SELECT * FROM employees WHERE hire_date>'2015-01-01';` | Rows where `hire_date` is after January 1, 2015. |
-| `q employees lim=3` | `SELECT * FROM employees LIMIT 3;` | Returns the first 3 rows of the `employees` table. |
-| `q employees shift=2` | `SELECT * FROM employees OFFSET 2;` | Skips the first 2 rows and returns the rest. |
-| `q employees +salary` | `SELECT * FROM employees ORDER BY salary ASC;` | Rows sorted by `salary` in ascending order. |
-| `q employees -age` | `SELECT * FROM employees ORDER BY age DESC;` | Rows sorted by `age` in descending order. |
-| `q employees transaction begin` | `BEGIN TRANSACTION;` | Begins a transaction. |
-| `q employees transaction commit` | `COMMIT;` | Commits the current transaction. |
-| `q employees pragma foreign_keys=ON` | `PRAGMA foreign_keys=ON;` | Enables foreign key constraints. |
-| `q employees export employees to emp.csv` | `SELECT * FROM employees INTO OUTFILE 'emp.csv';` | Exports the `employees` table to a CSV file named `emp.csv`. |
-| `q employees import emp.csv into employees` | `.mode csv; .import 'emp.csv' employees;` | Imports data from a CSV file into the `employees` table. |
-| `q employees col regexp '^J.*'` | `SELECT * FROM employees WHERE name REGEXP '^J.*';` | Rows where `name` starts with `J`. |
+| `q export employees` | `SELECT * FROM employees INTO OUTFILE 'emp.tsv';` | Exports the `employees` table to a file. Allows specifying output formats like JSON. |
+| `q import employees` | `.mode tab; .import 'emp.tsv' employees;` | Imports data from a file into the `employees` table. |
+| `q alter employees add age INTEGER` | `ALTER TABLE employees ADD COLUMN age INTEGER;` | Adds a new column to an existing table. |
+| `q alter employees rename name TO full_name` | `ALTER TABLE employees RENAME COLUMN name TO full_name;` | Renames a column in an existing table. |
+| `q alter employees drop age` | `ALTER TABLE employees DROP COLUMN age;` | Removes a column from an existing table. |
+| `q --version` | - | Displays the current version of the program. |
+| `q --help` | - | Displays help information about the available commands. |
+| `q --debug` | - | Activates debugging mode for detailed logs during execution. |
+| `q employees:id,name,dep,stat dep=IT\|dep=Sales stat=active\|stat=unknown age<20\|age>60 +name -stat lim 100 shift 100` | `SELECT id,name,department,status FROM employees WHERE (department='IT' OR department='Sales') AND (status='active' OR status='unknown') AND (age<20 OR age>60) ORDER BY name ASC, status DESC LIMIT 100 OFFSET 100;` | Ultimate query combining filtering, ordering, and pagination. |
