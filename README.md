@@ -436,3 +436,8 @@ New Features Explanation
 | `q --help` | - | Displays help information about the available commands. |
 | `q --debug` | - | Activates debugging mode for detailed logs during execution. |
 | `q employees:id,name,dep,stat dep=IT\|dep=Sales stat=active\|stat=unknown age<20\|age>60 +name -stat lim 100 shift 100` | `SELECT id,name,department,status FROM employees WHERE (department='IT' OR department='Sales') AND (status='active' OR status='unknown') AND (age<20 OR age>60) ORDER BY name ASC, status DESC LIMIT 100 OFFSET 100;` | Ultimate query combining filtering, ordering, and pagination. |
+
+## Undocumented
+
+--clear-cache: clears the list of database files and tables, not needed for now
+--query-only: output only the SQL query, no JSON
