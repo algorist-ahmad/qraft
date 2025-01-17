@@ -1,10 +1,13 @@
 #!/bin/bash
 
 export ROOT=$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")") # path to this project root dir
+export SRC_DIR=$ROOT/src
+export WORK_DIR=$PWD
 
 # imports
 source $ROOT/.env
 source $ROOT/src/logger.sh
+source $ROOT/src/utils.sh
 export jq="$ROOT/src/qj/qj"
 
 # general syntax: qraft <filter> <operator> <operands>
@@ -54,7 +57,7 @@ initialize() {
   # attempt connection to $DATABASE
   # other verifications making sure its working
   # DO NOT put existence tests and validity tests outside this function
-  # cat "$JSON_OUTPUT_FILE" 
+  # cat "$JSON_OUTPUT_FILE"
   create_cache_file  # non-output meta data stored here
   reset_output_file  # final output
 }
@@ -67,7 +70,7 @@ create_cache_file() {
 reset_output_file() {
     db_file=$($jq $CACHE_FILE database.file)
     target_table=$($jq $CACHE_FILE target.table)
-    
+
     cp $OUTPUT_TEMPLATE_FILE $OUTPUT_FILE
     $jq $OUTPUT_FILE -u database = $db_file
     $jq $OUTPUT_FILE -u target.table = $target_table
@@ -86,7 +89,7 @@ parse() {
     parsed=
     # indicates last option entered so the parser knows where to place the next argument
     last_opt=
-    
+
     # Iterate over arguments using a while loop
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -287,14 +290,14 @@ dispatch() {
     e= # error
 
     echo "HERE! db is $db"
-    
+
     # if an error is detected, output to stderr immediately
     if [[ $e -gt 0 ]]; then
         echo "Error: $(get_error_msg $e)" >&2
         exit $e
     fi
 
-    cd $ROOT/src
+    cd "$SRC_DIR"
 
     not ${ARG[input]} && run_default
     is_true ${ARG[help]} && print_help
@@ -365,17 +368,5 @@ reveal_variables() {
         printf "${yellow}%-20s${reset} : ${color}%s${reset}\n" "$key" "$value"
     done
 }
-
-# helpers
-
-set_env() { echo "${ENV[$1]}"; }
-get_file() { echo "${FILE[$1]}"; }
-get_error_msg() { echo "${ERROR[$1]}"; }
-is_null() { [[ "$1" == "$NULL" ]] }         # is equal to defined null value
-is_true() { [[ "$1" != "0" ]] }              # NOT 0
-is() { [[ -n "$1" ]] }                      # non-empty
-not() { [[ -z "$1" ]] || [[ "$1" == '0' ]] || [[ "$1" == 'false' ]] } # returns positive if $1 is 0, 'false', or empty
-
-# helpers
 
 main "$@"
