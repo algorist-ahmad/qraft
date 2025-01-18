@@ -10,10 +10,39 @@ read -ra DATABASE_FILES <<< "$1"
 
 DATABASE_FILES_COUNT=${#DATABASE_FILES[@]}
 
+no_database_error() {
+  err "Error: No database file provided."
+  exit 1
+}
+
 case $DATABASE_FILES_COUNT in
   0)
-    err "Error: No database file provided."
-    exit 1
+    if [[ -f "$DATABASES_FILE" ]]; then
+      # load ~/.cache/qraft/databases (ignore empty lines && one line = one database file)
+      DATABASES=()
+      while IFS= read -r line; do
+        [[ -n "$line" ]] && DATABASES+=("$line")
+      done <<< "$(grep -vE '^[[:space:]]*$' "$DATABASES_FILE")"
+
+      case ${#DATABASES[@]} in
+        0)
+          no_database_error
+          ;;
+        1)
+          DATABASE_FILE=$DATABASES
+          ;;
+        *)
+          # ask user to choose from databases listed in ~/.cache/qraft/databases
+          while select DATABASE_FILE in "${DATABASES[@]}"; do break; done; do
+            [[ -n "$DATABASE_FILE" ]] && break || echo "Please, choose a valid entry or press Ctrl+D to abort!" >&2
+          done
+
+          [[ -z "$DATABASE_FILE" ]] && no_database_error
+          ;;
+      esac
+    else
+      no_database_error
+    fi
     ;;
   1)
     DATABASE_FILE=$DATABASE_FILES
