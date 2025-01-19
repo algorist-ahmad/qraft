@@ -31,7 +31,7 @@ declare -A ARG=(
     [shift]=0            # OFFSET <INT>
     [ordering]=          # ORDER BY <COL> ASC(+)/DESC(-)
     [grouping]=          # GROUP BY
-    [select]=1
+    [select]=$#
     [insert]=0
     [update]=0
     [delete]=0
@@ -160,6 +160,7 @@ parse() {
                 if not ${ARG[target]} ; then
                   last_opt=target
                   ARG[$last_opt]=''
+                  ARG[select]=0
                   parsed=true
                 fi
             ;;&
@@ -289,7 +290,7 @@ dispatch() {
     shift=${ARG[shift]:-0}
     e= # error
 
-    echo "HERE! db is $db"
+    echo "HERE! db is $db" >&2
 
     # if an error is detected, output to stderr immediately
     if [[ $e -gt 0 ]]; then
@@ -299,9 +300,10 @@ dispatch() {
 
     cd "$SRC_DIR"
 
-    not ${ARG[input]} && run_default
+    not ${ARG[input]} && ./default.sh
     is_true ${ARG[help]} && print_help
     is_true ${ARG[connect]} && ./load_database.sh "${ARG[database]}"
+    not ${ARG[connect]} && is ${ARG[target]} && ./target.sh ${ARG[target]}
     is_true ${ARG[protect]} && ./protect.sh
 
     is_true ${ARG[select]} && ./select.sh -output "$json" -from "$target" -in "$db" -where "$filter" -modifier "$modifier" -groupby "$grouping" -orderby "$ordering" -limit $lim -offset $shift
@@ -332,11 +334,6 @@ terminate() {
 
 print_help() {
     echo 'read README.md'
-}
-
-run_default() {
-    # echo "no args, idk what to do"
-    :
 }
 
 # Loop through the keys of the associative array and print key-value pairs
