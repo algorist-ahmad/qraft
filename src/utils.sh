@@ -21,3 +21,19 @@ max_of() {
 
   echo "$max"
 }
+
+contains() {
+  needle=$1
+  shift
+
+  while [[ $# != 0 ]]; do
+    [[ $1 == "$needle" ]] && return 0
+    shift
+  done
+
+  return 1
+}
+
+list_attached_databases() {
+    jq '.[].database' "$DATABASES_FILE" | sed -E 's/^"|"$//g'
+}

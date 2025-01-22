@@ -55,7 +55,11 @@ fi
 
 # Add files to databases list
 for FILE in "${DATABASE_FILES[@]}"; do
-    grep "$FILE" "$DATABASES_FILE" &>/dev/null || echo "$FILE" >> "$DATABASES_FILE"
+  tmp_file=$(mktemp)
+  touch "$DATABASES_FILE"  # Cretae databases file if does not exist already
+  [[ $(head -c1 "$DATABASES_FILE") != "[" ]] && echo '[]' > "$DATABASES_FILE"  # Initialze databases file to an empty array if it was empty (or malformed)
+  jq "if (any(.database == \"$FILE\") | not) then . + [{\"database\": \"$FILE\"}] end" "$DATABASES_FILE" > "$tmp_file"  # Add entry for the database (if does not already exist)
+  mv "$tmp_file" "$DATABASES_FILE"
 done
 
 $jq $OUTPUT_FILE -u success = true

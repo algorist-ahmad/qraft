@@ -22,7 +22,7 @@ case $DATABASE_FILES_COUNT in
       DATABASES=()
       while IFS= read -r line; do
         [[ -n "$line" ]] && DATABASES+=("$line")
-      done <<< "$(grep -vE '^[[:space:]]*$' "$DATABASES_FILE")"
+      done <<< "$(list_attached_databases)"
 
       case ${#DATABASES[@]} in
         0)

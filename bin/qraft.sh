@@ -124,7 +124,7 @@ parse() {
                   parsed=true
                 fi
             ;;&
-            -p | --protect)
+            -p | --protect | protect)
                 if not ${ARG[protect]} ; then
                   last_opt=protect
                   ARG[$last_opt]='' # prepare to accept args
@@ -304,7 +304,7 @@ dispatch() {
     is_true ${ARG[help]} && print_help
     is_true ${ARG[connect]} && ./load_database.sh "${ARG[database]}"
     not ${ARG[connect]} && is ${ARG[target]} && ./target.sh ${ARG[target]}
-    is_true ${ARG[protect]} && ./protect.sh
+    is_true ${ARG[protect]} && ./protect.sh ${ARG[protect]}
 
     is_true ${ARG[select]} && ./select.sh -output "$json" -from "$target" -in "$db" -where "$filter" -modifier "$modifier" -groupby "$grouping" -orderby "$ordering" -limit $lim -offset $shift
     is_true ${ARG[insert]} && ./insert.sh -output $json -into $target -in $db -values $operands

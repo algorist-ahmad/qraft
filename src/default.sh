@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source "$SRC_DIR"/utils.sh
+
 choose_database() {
     cd "$WORK_DIR" || return 1
     while true; do
@@ -34,7 +36,7 @@ create_database() {
 run_default() {
     file=$($jq "$CACHE_FILE" database.file)
     if [[ "$file" == null ]]; then
-        if [[ -n $DATABASE || $(wc -l "$DATABASES_FILE" 2>/dev/null || echo 0) -gt 0 ]]; then
+        if [[ -n $DATABASE || $(wc -l <<< "$(list_attached_databases)" 2>/dev/null || echo 0) -gt 0 ]]; then
             ./load_database.sh || return $?
         else
             echo "No database found in the cache. What would you like to do?" >&2
