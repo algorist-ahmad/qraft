@@ -9,6 +9,8 @@ is_null() { [[ "$1" == "$NULL" ]] }         # is equal to defined null value
 is_true() { [[ "$1" != "0" ]] }              # NOT 0
 is() { [[ -n "$1" ]] }                      # non-empty
 not() { [[ -z "$1" ]] || [[ "$1" == '0' ]] || [[ "$1" == 'false' ]] } # returns positive if $1 is 0, 'false', or empty
+is_even() { return $(($1 % 2)); }
+is_odd() { ! is_even "$1"; }
 
 max_of() {
   max=$1
