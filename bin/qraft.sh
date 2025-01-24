@@ -21,6 +21,7 @@ declare -A ARG=(
     [default]=0
     [connect]=0
     [protect]=0
+    [create]=0
     [alter]=0
     [rename]=0
     [list]=0             # list db / list tables
@@ -31,7 +32,7 @@ declare -A ARG=(
     [shift]=0            # OFFSET <INT>
     [ordering]=          # ORDER BY <COL> ASC(+)/DESC(-)
     [grouping]=          # GROUP BY
-    [select]=1
+    [select]=$#
     [insert]=0
     [update]=0
     [delete]=0
@@ -92,6 +93,8 @@ parse() {
 
     # Iterate over arguments using a while loop
     while [[ $# -gt 0 ]]; do
+        [[ -n $last_opt ]] && ARG[$last_opt]+=" '$1'" && shift && continue
+
         case "$1" in
             --debug | debug)
                 if not ${ARG[debug]} ; then
@@ -124,7 +127,7 @@ parse() {
                   parsed=true
                 fi
             ;;&
-            -p | --protect)
+            -p | --protect | protect)
                 if not ${ARG[protect]} ; then
                   last_opt=protect
                   ARG[$last_opt]='' # prepare to accept args
@@ -132,7 +135,15 @@ parse() {
                   parsed=true
                 fi
             ;;&
-            -A | --alter)
+            create)
+                if not ${ARG[create]} ; then
+                  last_opt=create
+                  ARG[$last_opt]=''
+                  ARG[select]=0
+                  parsed=true
+                fi
+            ;;&
+            -A | --alter | alter)
                 if not ${ARG[alter]} ; then
                   last_opt=alter
                   ARG[$last_opt]=''
@@ -160,6 +171,7 @@ parse() {
                 if not ${ARG[target]} ; then
                   last_opt=target
                   ARG[$last_opt]=''
+                  ARG[select]=0
                   parsed=true
                 fi
             ;;&
@@ -263,7 +275,7 @@ parse() {
                 if is $parsed; then
                     : # do nothing
                 elif is $last_opt; then
-                    ARG[$last_opt]+=" $1"
+                    ARG[$last_opt]+=" '$1'"
                 else
                     ARG[filter]+=" $1"
                 fi
@@ -279,17 +291,17 @@ parse() {
 dispatch() {
 
     db=$($jq $CACHE_FILE database.file)
-    target="${ARG[target]:-null}"
+    target=$(eval echo "${ARG[target]:-null}")
     modifier=null # DISTINCT
-    operands="${ARG[operands]:-null}"
-    filter="${ARG[filter]:-null}"
-    grouping="${ARG[grouping]:-null}"
-    ordering="${ARG[ordering]:-null}"
-    lim=${ARG[limit]:-99}
-    shift=${ARG[shift]:-0}
+    operands=$(eval echo "${ARG[operands]:-null}")
+    filter=$(eval echo "${ARG[filter]:-null}")
+    grouping=$(eval echo "${ARG[grouping]:-null}")
+    ordering=$(eval echo "${ARG[ordering]:-null}")
+    lim=$(eval echo "${ARG[limit]:-99}")
+    shift=$(eval echo "${ARG[shift]:-0}")
     e= # error
 
-    echo "HERE! db is $db"
+    echo "HERE! db is $db" >&2
 
     # if an error is detected, output to stderr immediately
     if [[ $e -gt 0 ]]; then
@@ -299,10 +311,13 @@ dispatch() {
 
     cd "$SRC_DIR"
 
-    not ${ARG[input]} && run_default
+    not ${ARG[input]} && ./default.sh
     is_true ${ARG[help]} && print_help
-    is_true ${ARG[connect]} && ./load_database.sh "${ARG[database]}"
-    is_true ${ARG[protect]} && ./protect.sh
+    is_true ${ARG[connect]} && eval ./load_database.sh "${ARG[database]}"
+    not ${ARG[connect]} && is ${ARG[target]} && eval ./target.sh "${ARG[target]}"
+    is_true ${ARG[protect]} && eval ./protect.sh "${ARG[protect]}"
+    is_true ${ARG[create]} && eval ./create.sh "${ARG[create]}"
+    is_true ${ARG[alter]} && eval ./alter.sh "${ARG[alter]}"
 
     is_true ${ARG[select]} && ./select.sh -output "$json" -from "$target" -in "$db" -where "$filter" -modifier "$modifier" -groupby "$grouping" -orderby "$ordering" -limit $lim -offset $shift
     is_true ${ARG[insert]} && ./insert.sh -output $json -into $target -in $db -values $operands
@@ -332,11 +347,6 @@ terminate() {
 
 print_help() {
     echo 'read README.md'
-}
-
-run_default() {
-    # echo "no args, idk what to do"
-    :
 }
 
 # Loop through the keys of the associative array and print key-value pairs
