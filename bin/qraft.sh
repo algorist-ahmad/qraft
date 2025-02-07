@@ -23,6 +23,7 @@ declare -A ARG=(
     [protect]=0
     [create]=0
     [alter]=0
+    [drop]=0
     [rename]=0
     [list]=0             # list db / list tables
     [desc]=0
@@ -146,6 +147,14 @@ parse() {
             -A | --alter | alter)
                 if not ${ARG[alter]} ; then
                   last_opt=alter
+                  ARG[$last_opt]=''
+                  ARG[select]=0
+                  parsed=true
+                fi
+            ;;&
+            drop)
+                if not ${ARG[drop]} ; then
+                  last_opt=drop
                   ARG[$last_opt]=''
                   ARG[select]=0
                   parsed=true
@@ -318,6 +327,7 @@ dispatch() {
     is_true ${ARG[protect]} && eval ./protect.sh "${ARG[protect]}"
     is_true ${ARG[create]} && eval ./create.sh "${ARG[create]}"
     is_true ${ARG[alter]} && eval ./alter.sh "${ARG[alter]}"
+    is_true ${ARG[drop]} && eval ./drop.sh "${ARG[drop]}"
 
     is_true ${ARG[select]} && ./select.sh -output "$json" -from "$target" -in "$db" -where "$filter" -modifier "$modifier" -groupby "$grouping" -orderby "$ordering" -limit $lim -offset $shift
     is_true ${ARG[insert]} && ./insert.sh -output $json -into $target -in $db -values $operands
