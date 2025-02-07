@@ -55,14 +55,15 @@ run_default() {
     else
         $jq "$OUTPUT_FILE" -u success = true
         $jq "$OUTPUT_FILE" -u message = "Nothing to do"
+        $jq "$OUTPUT_FILE" -u database = "$file"
     fi
 
+    file=$($jq "$CACHE_FILE" database.file)
     table=$($jq "$CACHE_FILE" database.table)
     if [[ "$table" == null ]]; then
         if [[ -n "$TABLE" ]]; then
             ./target.sh
         else
-            file=$($jq "$CACHE_FILE" database.file)
             read -ra all_tables <<< "$(sqlite3 "$file" .tables)"
             case ${#all_tables[@]} in
             0)
@@ -86,8 +87,9 @@ run_default() {
                 ;;
             esac
         fi
+    else
+        $jq "$OUTPUT_FILE" -u target.table = "$table"
     fi
-
 }
 
 run_default "$@"
