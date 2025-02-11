@@ -30,24 +30,41 @@ table=${pre_args_table:-$SELECTED_TABLE}
 [[ -z $table ]] && err "Table name cannot be empty" && exit 1
 
 filters=()
+last_filter=""
+expecting_null=false
 # get filters
 for pair in "${pre_args[@]}"; do
-    symbol=$(get_symbol "$pair")
-    [[ -z "$symbol" ]] && err "Inavlid filter '$pair'" && exit 1
-    key="${pair%%"$symbol"*}"
-    val="${pair#*"$symbol"}"
+    if [[ $expecting_null == true ]]; then
+        case $pair in
+            "null") filters+=("$last_filter = null") ;;
+            "!null") filters+=("$last_filter <> null") ;;
+            *) err "Inavlid filter '$last_filter'" && exit 1 ;;
+        esac
+        expecting_null=false
+    else
+        symbol=$(get_symbol "$pair")
 
-    case "$symbol" in
-        '='|'!=') ! is_number "$val" && [[ $val != null ]] && val="'$val'" ;;
-        '~') val="'$val'" ;;
-    esac
+        if [[ -z "$symbol" ]]; then
+            expecting_null=true
+        else
+            key="${pair%%"$symbol"*}"
+            val="${pair#*"$symbol"}"
 
-    case "$symbol" in
-        '!=') symbol="<>" ;;
-        '~') symbol="LIKE" ;;
-    esac
+            case "$symbol" in
+                '='|'!=') ! is_number "$val" && val="'$val'" ;;
+                '~') val="'$val'" ;;
+            esac
 
-    filters+=("$key $symbol $val")
+            case "$symbol" in
+                '!=') symbol="<>" ;;
+                '~') symbol="LIKE" ;;
+            esac
+
+            filters+=("$key $symbol $val")
+        fi
+    fi
+
+    last_filter=$pair
 done
 
 ## Build query
