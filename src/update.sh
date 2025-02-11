@@ -4,6 +4,7 @@
 
 source "$SRC_DIR"/logger.sh
 source "$SRC_DIR"/utils.sh
+source "$SRC_DIR"/utils/parse_filters.sh
 
 # Parse from string into an indexed array
 eval pre_args=($pre_args)
@@ -12,13 +13,6 @@ eval pre_args=($pre_args)
 [[ $# == 0 ]] && err "Please specify some values to add into the table" && exit 1
 [[ -z $SELECTED_DATABASE ]] && err "No database loaded! Please, load a database first" && exit 1
 [[ ${#pre_args} == 0 && $SELECTED_TABLE == null ]] && err "Please, select a table to add values into" && exit 1
-
-get_symbol() {
-    for symbol in '!=' '>=' '<=' '=' '<' '>' '~'; do
-        [[ $1 == *"$symbol"* ]] && echo $symbol && return 0
-    done
-    return 1
-}
 
 # get table
 if ! get_symbol "${pre_args[0]}" > /dev/null; then
@@ -29,43 +23,8 @@ fi
 table=${pre_args_table:-$SELECTED_TABLE}
 [[ -z $table ]] && err "Table name cannot be empty" && exit 1
 
-filters=()
-last_filter=""
-expecting_null=false
-# get filters
-for pair in "${pre_args[@]}"; do
-    if [[ $expecting_null == true ]]; then
-        case $pair in
-            "null") filters+=("$last_filter = null") ;;
-            "!null") filters+=("$last_filter <> null") ;;
-            *) err "Inavlid filter '$last_filter'" && exit 1 ;;
-        esac
-        expecting_null=false
-    else
-        symbol=$(get_symbol "$pair")
-
-        if [[ -z "$symbol" ]]; then
-            expecting_null=true
-        else
-            key="${pair%%"$symbol"*}"
-            val="${pair#*"$symbol"}"
-
-            case "$symbol" in
-                '='|'!=') ! is_number "$val" && val="'$val'" ;;
-                '~') val="'$val'" ;;
-            esac
-
-            case "$symbol" in
-                '!=') symbol="<>" ;;
-                '~') symbol="LIKE" ;;
-            esac
-
-            filters+=("$key $symbol $val")
-        fi
-    fi
-
-    last_filter=$pair
-done
+## Get filters (saved in 'filters' global variable)
+STRICT_MODE=1 parse_filters "${pre_args[@]}" || exit $?
 
 ## Build query
 query="UPDATE $table SET"
