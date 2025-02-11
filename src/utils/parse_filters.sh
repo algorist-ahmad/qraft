@@ -33,9 +33,8 @@ parse_filters() {
     declare -ga columns=()
 
     last_filter=""
+    last_symbol=""
     for pair in "$@"; do
-        [[ -n $last_filter ]] && last_symbol=$(get_symbol "$last_filter")
-
         if [[ -n $last_filter && -z $last_symbol ]]; then
             case $pair in
                 "null")
@@ -59,6 +58,7 @@ parse_filters() {
         fi
 
         last_filter=$pair
+        last_symbol=$(get_symbol "$pair")
     done
 
     if [[ $STRICT_MODE == 1 && -n $last_filter && -z $last_symbol ]] && ! contains "$last_filter" 'null' '!null'; then

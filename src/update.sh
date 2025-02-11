@@ -42,6 +42,9 @@ if [[ ${#filters[@]} -gt 0 ]]; then
     for filter in "${filters[@]:1}"; do
         query+=" AND $filter"
     done
+else
+    err "Please, provide at least one filter"
+    exit 1
 fi
 
 # Write to output JSON

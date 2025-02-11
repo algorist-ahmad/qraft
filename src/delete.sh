@@ -2,33 +2,45 @@
 
 # DELETE script to generate an SQL DELETE query.
 
-output_file=""
-db_file=""
-target=""
-filter=""
+source "$SRC_DIR"/logger.sh
+source "$SRC_DIR"/utils.sh
+source "$SRC_DIR"/utils/parse_filters.sh
 
-# Parse arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        -output) output_file="$2"; shift ;;
-        -in) db_file="$2"; shift ;;
-        -from) target="$2"; shift ;;
-        -where) filter="$2"; shift ;;
-        *) echo "Unknown parameter: $1"; exit 1 ;;
-    esac
-    shift
-done
+# Parse from string into an indexed array
+eval pre_args=($pre_args)
 
-# Validate mandatory fields
-if [[ -z "$output_file" || -z "$db_file" || -z "$target" ]]; then
-    echo '{"success": false, "message": "Missing mandatory arguments"}' > "$output_file"
+# Input sanity checks
+[[ -z $SELECTED_DATABASE ]] && err "No database loaded! Please, load a database first" && exit 1
+[[ ${#pre_args} == 0 && $SELECTED_TABLE == null ]] && err "Please, select a table to add values into" && exit 1
+
+# get table
+if ! get_symbol "${pre_args[0]}" > /dev/null; then
+    pre_args_table="${pre_args[0]}"
+    pre_args=(${pre_args[@]:1})
+fi
+
+table=${pre_args_table:-$SELECTED_TABLE}
+[[ -z $table ]] && err "Table name cannot be empty" && exit 1
+
+## Get filters (saved in 'filters' global variable)
+STRICT_MODE=1 parse_filters "${pre_args[@]}" || exit $?
+
+## Build query
+query="DELETE FROM $table"
+if [[ ${#filters[@]} -gt 0 ]]; then
+    query+=" WHERE ${filters[0]}"
+    for filter in "${filters[@]:1}"; do
+        query+=" AND $filter"
+    done
+else
+    err "Please, provide at least one filter"
     exit 1
 fi
 
-# Build final query
-query="DELETE FROM ${target} WHERE ${filter:-1=1};"
-
 # Write to output JSON
-jq -n --arg db "$db_file" --arg query "$query" \
-   '{success: true, message: "Query building succeeded", database: $db, operation: "DELETE", query: $query}' \
-   > "$output_file"
+$jq "$OUTPUT_FILE" -u success = true
+$jq "$OUTPUT_FILE" -u message = "Deleted records from table '$table'"
+$jq "$OUTPUT_FILE" -u database = "$SELECTED_DATABASE"
+$jq "$OUTPUT_FILE" -u target.table = "$table"
+$jq "$OUTPUT_FILE" -u operation = "DELETE"
+$jq "$OUTPUT_FILE" -u qeury = "$query"
