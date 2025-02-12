@@ -122,6 +122,7 @@ dispatch() {
         update) ./update.sh "${post_args[@]}" ;;
         delete) ./delete.sh "${post_args[@]}" ;;
         transaction) ./transaction.sh "${post_args[@]}" ;;
+        pragma) ./pragma.sh "${post_args[@]}" ;;
         '')
             if [[ $pre_args == "" ]]; then
                 ./default.sh
