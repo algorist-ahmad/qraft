@@ -88,7 +88,7 @@ parse() {
             add|insert) action="insert" ;;
             mod|set|update) action="update" ;;
             del|delete|rm) action="delete" ;;
-            transac) action="transac" ;;
+            transac|transaction) action="transaction" ;;
             pragma) action="pragma" ;;
             export) action="export" ;;
             import) action="import" ;;
@@ -121,6 +121,7 @@ dispatch() {
         insert) ./insert.sh "${post_args[@]}" ;;
         update) ./update.sh "${post_args[@]}" ;;
         delete) ./delete.sh "${post_args[@]}" ;;
+        transaction) ./transaction.sh "${post_args[@]}" ;;
         '')
             if [[ $pre_args == "" ]]; then
                 ./default.sh
