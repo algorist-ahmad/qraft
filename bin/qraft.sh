@@ -123,6 +123,8 @@ dispatch() {
         delete) ./delete.sh "${post_args[@]}" ;;
         transaction) ./transaction.sh "${post_args[@]}" ;;
         pragma) ./pragma.sh "${post_args[@]}" ;;
+        export) ./export.sh "${post_args[@]}" ;;
+        import) ./import.sh "${post_args[@]}" ;;
         '')
             if [[ $pre_args == "" ]]; then
                 ./default.sh
