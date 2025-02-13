@@ -81,7 +81,7 @@ parse() {
             alter) action="alter" ;;
             drop) action="drop" ;;
             list) action="list" ;;
-            desc) action="disc" ;;
+            desc) action="desc" ;;
             target|select) action="target" ;;
             lim) action="limit" ;;
             shift|offset) action="shift" ;;
@@ -135,6 +135,7 @@ dispatch() {
         export) ./export.sh "${post_args[@]}" ;;
         import) ./import.sh "${post_args[@]}" ;;
         tables) ./tables.sh "${post_args[@]}" ;;
+        desc) ./desc.sh "${post_args[@]}" ;;
         '')
             if [[ $pre_args == "" ]]; then
                 ./default.sh
