@@ -13,6 +13,16 @@ is_number() { [[ $1 =~ ^[-+]?[0-9]+\.?[0-9]*$ ]]; }
 is_even() { return $(($1 % 2)); }
 is_odd() { ! is_even "$1"; }
 
+join_str() {
+  separator=$1
+  shift
+  echo -n "$1"
+  shift
+  for it in "$@"; do
+    echo -n "$separator$it"
+  done
+}
+
 max_of() {
   max=$1
   shift
