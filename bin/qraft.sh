@@ -93,7 +93,15 @@ parse() {
             export) action="export" ;;
             import) action="import" ;;
             tables) action="tables" ;;
-            *) pre_args+=" \"$1\"" ;;
+            *)
+                filename=$(real_path "${1%/*}")
+                if [[ -e "$filename" ]]; then
+                    action="connect"
+                    continue
+                else
+                    pre_args+=" \"$1\""
+                fi
+                ;;
         esac
         shift
     done
