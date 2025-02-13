@@ -92,6 +92,7 @@ parse() {
             pragma) action="pragma" ;;
             export) action="export" ;;
             import) action="import" ;;
+            tables) action="tables" ;;
             *) pre_args+=" \"$1\"" ;;
         esac
         shift
@@ -125,6 +126,7 @@ dispatch() {
         pragma) ./pragma.sh "${post_args[@]}" ;;
         export) ./export.sh "${post_args[@]}" ;;
         import) ./import.sh "${post_args[@]}" ;;
+        tables) ./tables.sh "${post_args[@]}" ;;
         '')
             if [[ $pre_args == "" ]]; then
                 ./default.sh
