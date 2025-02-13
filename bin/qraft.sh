@@ -97,7 +97,7 @@ parse() {
                 filename=$(real_path "${1%/*}")
                 if [[ -e "$filename" ]]; then
                     action="connect"
-                    continue
+                    continue # Prevent `shift` && Preserve $1 in $post_args
                 else
                     pre_args+=" \"$1\""
                 fi
