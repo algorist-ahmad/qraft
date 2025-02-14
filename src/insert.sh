@@ -2,37 +2,29 @@
 
 # INSERT script to generate an SQL INSERT query.
 
-output_file=""
-db_file=""
-target=""
-values=""
+source "$SRC_DIR"/logger.sh
 
-# Parse arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        -output) output_file="$2"; shift ;;
-        -in) db_file="$2"; shift ;;
-        -into) target="$2"; shift ;;
-        -values) values="$2"; shift ;;
-        *) echo "Unknown parameter: $1"; exit 1 ;;
-    esac
-    shift
-done
+# Parse from string into an indexed array
+eval pre_args=($pre_args)
 
-# Validate mandatory fields
-if [[ -z "$output_file" || -z "$db_file" || -z "$target" || -z "$values" ]]; then
-    echo '{"success": false, "message": "Missing mandatory arguments"}' > "$output_file"
-    exit 1
-fi
+[[ ${#pre_args[@]} -gt 1 ]] && err "Can only add values into exactly one table" && exit 1
+[[ $# == 0 ]] && err "Please specify some values to add into the table" && exit 1
+[[ -z $SELECTED_DATABASE ]] && err "No database loaded! Please, load a database first" && exit 1
+[[ ${#pre_args} == 0 && $SELECTED_TABLE == null ]] && err "Please, select a table to add values into" && exit 1
 
+table=${pre_args[0]:-$SELECTED_TABLE}
+[[ -z $table ]] && err "Table name cannot be empty" && exit 1
+
+query="INSERT INTO $table"
 # Handle default values
-if [[ "$values" == "default" ]]; then
-    query="INSERT INTO ${target} DEFAULT VALUES;"
+if [[ "$*" == "default" ]]; then
+    query+=" DEFAULT VALUES;"
 else
-    IFS=' ' read -r -a values_array <<< "$values"
+    # Parse arguments
     columns=""
     vals=""
-    for pair in "${values_array[@]}"; do
+    for pair in "$@"; do
+        [[ $1 != *=* ]] && err "Inavlid value '$1', values must contain a '=' symbol" && exit 1
         key="${pair%%=*}"
         val="${pair#*=}"
         columns+="$key, "
@@ -40,10 +32,13 @@ else
     done
     columns="${columns%, }"
     vals="${vals%, }"
-    query="INSERT INTO ${target} ($columns) VALUES ($vals);"
+    query+=" ($columns) VALUES ($vals);"
 fi
 
 # Write to output JSON
-jq -n --arg db "$db_file" --arg query "$query" \
-   '{success: true, message: "Query building succeeded", database: $db, operation: "INSERT", query: $query}' \
-   > "$output_file"
+$jq "$OUTPUT_FILE" -u success = true
+$jq "$OUTPUT_FILE" -u message = "Added values into table '$table'"
+$jq "$OUTPUT_FILE" -u database = "$SELECTED_DATABASE"
+$jq "$OUTPUT_FILE" -u target.table = "$table"
+$jq "$OUTPUT_FILE" -u operation = "INSERT"
+$jq "$OUTPUT_FILE" -u query = "$query"
