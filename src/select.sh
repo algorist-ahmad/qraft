@@ -32,7 +32,7 @@ query+=" FROM $table"
 [[ "${#filters[@]}" -gt 0 ]] && query+=" WHERE $(join_str " AND " "${filters[@]}")"
 [[ -n "$order_by" ]] && query+=" ORDER BY $order_by"
 [[ -n "$limit" ]] && query+=" LIMIT $limit"
-[[ -n "$offset" ]] && query+=" ORDER BY $offset"
+[[ -n "$offset" ]] && query+=" OFFSET $offset"
 [[ -n "$group_by" ]] && query+=" GROUP BY $group_by"
 
 # Write output

@@ -7,89 +7,72 @@ get_symbol() {
     return 1
 }
 
-_parse_single_filter() {
-    symbol=$(get_symbol "$1")
-
-    [[ -z "$symbol" ]] && return
-
-    key="${1%%"$symbol"*}"
-    val="${1#*"$symbol"}"
-
-    case "$key" in
-        lim|limit|shift|+*|-*)
-            [[ "$STRICT_MODE" = 1 ]] && err "Invalid filter '$1'" && return 1
-        ;;
-    esac
-
-    case "$key" in
-        lim|limit) declare -g limit=$val; return ;;
-        shift) declare -g offset=$val; return ;;
-        +*) declare -g order_by="$val ASC"; return ;;
-        -*) declare -g order_by="$val DESC"; return ;;
-    esac
-
-    case "$symbol" in
-        '='|'!=') ! is_number "$val" && val="'$val'" ;;
-        '~') val="'$val'" ;;
-    esac
-
-    case "$symbol" in
-        '!=') symbol="<>" ;;
-        '~') symbol="LIKE" ;;
-    esac
-
-    filters+=("$key $symbol $val")
-}
-
 parse_filters() {
+    args=("$@")
+
     declare -ga filters=()
     declare -ga columns=()
 
-    last_filter=""
-    last_symbol=""
-    for pair in "$@"; do
-        if [[ "$last_filter" == "group" ]]; then
-            if [[ "$STRICT_MODE" == 1 ]]; then
-                err "Invalid filter '$last_filter'"
+    for ((i=0; i < ${#args[@]}; i++)); do
+        current="${args[$i]}"
+        next="${args[$((i + 1))]}"
+
+        if [[ "$current" == "group" ]]; then
+            if [[ "$STRICT_MODE" == 1 || -z "$next" ]]; then
+                err "Invalid filter '$current'"
                 return 1
             else
-                declare -g group_by=$pair
+                declare -g group_by=$next
+                ((i++))
             fi
-        elif [[ -n $last_filter && -z $last_symbol ]]; then
-            case $pair in
-                group|limit|lim|shift|+*|-*) ;;
-                "null")
-                    filters+=("$last_filter = null")
-                    ;;
-                "!null")
-                    filters+=("$last_filter <> null")
-                    ;;
-                *)
-                    if [[ "$STRICT_MODE" == 1 ]]; then
-                        err "Inavlid filter '$last_filter'"
-                        return 1
-                    else
-                        columns+=("$last_filter")
-                        _parse_single_filter "$pair"
-                    fi
-                    ;;
+
+            continue
+        fi
+
+        symbol=$(get_symbol "$current")
+        key="${current%%"$symbol"*}"
+        val="${current#*"$symbol"}"
+
+        if [[ -z "$symbol" ]]; then
+            [[ "$STRICT_MODE" == 1 ]] && err "Inavlid filter '$$current'" && return 1
+
+            case "$current" in
+                +*) declare -g order_by="${current:1} ASC"; continue ;;
+                -*) declare -g order_by="${current:1} DESC"; continue ;;
             esac
-        else
-            _parse_single_filter "$pair"
+
+            case "$next" in
+                "null") filters+=("$current = NULL"); ((i++)) ;;
+                "!null") filters+=("$current <> NULL"); ((i++)) ;;
+                *) columns+=("$current") ;;
+            esac
+
+            continue
         fi
 
-        last_filter=$pair
-        last_symbol=$(get_symbol "$pair")
+        case "$key" in
+            lim|limit|shift|+*|-*)
+                [[ "$STRICT_MODE" = 1 ]] && err "Invalid filter '$current'" && return 1
+            ;;
+        esac
+
+        case "$key" in
+            lim|limit) declare -g limit=$val; continue ;;
+            shift) declare -g offset=$val; continue ;;
+        esac
+
+        case "$symbol" in
+            '='|'!=') ! is_number "$val" && val="'$val'" ;;
+            '~') val="'$val'" ;;
+        esac
+
+        case "$symbol" in
+            '!=') symbol="<>" ;;
+            '~') symbol="LIKE" ;;
+        esac
+
+        filters+=("$key $symbol $val")
     done
-
-    if [[ -n $last_filter && -z $last_symbol ]] && ! contains "$last_filter" 'null' '!null'; then
-        if [[ $STRICT_MODE == 1 ]]; then
-            err "Inavlid filter '$last_filter'"
-            return 1
-        elif [[ "$group_by" != "$last_filter" ]]; then
-            columns+=("$last_filter")
-        fi
-    fi
 
     if [[ ${#columns[@]} -gt 0 ]]; then
         declare -g table=${columns[0]}
