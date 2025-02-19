@@ -99,7 +99,7 @@ parse() {
                     action="connect"
                     continue # Prevent `shift` && Preserve $1 in $post_args
                 else
-                    pre_args+=" \"$1\""
+                    pre_args+=" ${1@Q}"
                 fi
                 ;;
         esac
