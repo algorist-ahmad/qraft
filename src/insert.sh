@@ -3,9 +3,10 @@
 # INSERT script to generate an SQL INSERT query.
 
 source "$SRC_DIR"/logger.sh
+source "$SRC_DIR"/utils/sql_value.sh
 
 # Parse from string into an indexed array
-eval pre_args=($pre_args)
+eval "pre_args=($pre_args)"
 
 [[ ${#pre_args[@]} -gt 1 ]] && err "Can only add values into exactly one table" && exit 1
 [[ $# == 0 ]] && err "Please specify some values to add into the table" && exit 1
@@ -28,7 +29,7 @@ else
         key="${pair%%=*}"
         val="${pair#*=}"
         columns+="$key, "
-        vals+="'$val', "
+        vals+="$(sql_value "$val"), "
     done
     columns="${columns%, }"
     vals="${vals%, }"
